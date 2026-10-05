@@ -1,0 +1,42 @@
+{
+  "name": "@codai/device-pairing",
+  "version": "0.1.0",
+  "description": "Human-facing half of device-pairing: short codes and SAS, byte-compatible with the Rust crate.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@12.3.4",
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "prettier --check ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dragos-catalin/device-pairing.git",
+    "directory": "ts"
+  },
+  "dependencies": {
+    "@noble/hashes": "2.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.4",
+    "@typescript/native": "npm:typescript@7.0.2",
+    "prettier": "3.9.9",
+    "tsdown": "0.23.0",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "vitest": "5.0.3"
+  }
+}

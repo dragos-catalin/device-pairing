@@ -1,0 +1,34 @@
+{
+  "code": [
+    { "token": "000102030405060708090a0b0c0d0e0f", "code": "A684P26E" },
+    { "token": "1f202122232425262728292a2b2c2d2e", "code": "4XASDFEA" },
+    { "token": "3e3f404142434445464748494a4b4c4d", "code": "J93ZC737" },
+    { "token": "5d5e5f606162636465666768696a6b6c", "code": "FHPPHQJ4" }
+  ],
+  "sas": [
+    {
+      "nonce": "00000000000000000000000000000000",
+      "a": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "b": "fffefdfcfbfaf9f8f7f6f5f4f3f2f1f0efeeedecebeae9e8e7e6e5e4e3e2e1e0",
+      "sas": "256753"
+    },
+    {
+      "nonce": "01010101010101010101010101010101",
+      "a": "010003020504070609080b0a0d0c0f0e111013121514171619181b1a1d1c1f1e",
+      "b": "fffefdfcfbfaf9f8f7f6f5f4f3f2f1f0efeeedecebeae9e8e7e6e5e4e3e2e1e0",
+      "sas": "374891"
+    },
+    {
+      "nonce": "02020202020202020202020202020202",
+      "a": "02030001060704050a0b08090e0f0c0d12131011161714151a1b18191e1f1c1d",
+      "b": "fffefdfcfbfaf9f8f7f6f5f4f3f2f1f0efeeedecebeae9e8e7e6e5e4e3e2e1e0",
+      "sas": "525073"
+    },
+    {
+      "nonce": "03030303030303030303030303030303",
+      "a": "03020100070605040b0a09080f0e0d0c13121110171615141b1a19181f1e1d1c",
+      "b": "fffefdfcfbfaf9f8f7f6f5f4f3f2f1f0efeeedecebeae9e8e7e6e5e4e3e2e1e0",
+      "sas": "959929"
+    }
+  ]
+}

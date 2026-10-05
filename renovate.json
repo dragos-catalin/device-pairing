@@ -1,0 +1,5 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>dragos-catalin/renovate-config"],
+  "rangeStrategy": "pin"
+}
