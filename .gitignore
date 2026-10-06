@@ -5,3 +5,5 @@ coverage/
 .copilot-tmp/
 *.log
 .env*
+ffi/kotlin/generated/
+ffi/kotlin/.cache/
