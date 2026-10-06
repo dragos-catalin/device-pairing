@@ -17,9 +17,9 @@ One crate, sans-IO at the core so it works from Tauri, a CLI, Android/TV over Un
 | `sas_digits`    | A 6-digit short authentication string for flows without a shared code; the user compares or types it.                                                                 |
 | `TrustStore`    | Paired devices as JSON sealed with a BLAKE3 keyed MAC derived from the local identity secret. A bad MAC refuses to load.                                              |
 | `net` (`iroh`)  | `join` and `accept` run the exchange over an iroh QUIC stream (ALPN `device-pairing/1`), where TLS proves each endpoint id.                                           |
-| `Domain`        | Every domain-separation string in one place, so an app with its own older scheme keeps its codes, SAS digits and sealed trust stores valid.                          |
+| `Domain`        | Every domain-separation string in one place, so an app with its own older scheme keeps its codes, SAS digits and sealed trust stores valid.                           |
 | `ts/`           | `@codai/device-pairing`: code formatting, validation and SAS in TypeScript, checked byte for byte against Rust test vectors.                                          |
-| `ffi/`          | `device-pairing-ffi`: UniFFI bindings, Kotlin package `ro.codai.devicepairing` (Android, Wear OS, Google TV, JVM).                                                     |
+| `ffi/`          | `device-pairing-ffi`: UniFFI bindings, Kotlin package `ro.codai.devicepairing` (Android, Wear OS, Google TV, JVM).                                                    |
 
 ```rust
 // Host (TV): show window.code(), then on an incoming connection:
