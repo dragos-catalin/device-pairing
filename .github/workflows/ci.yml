@@ -23,7 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Toolchain
-        run: rustup toolchain install stable --profile minimal -c clippy,rustfmt && rustup default stable
+        run: |
+          rustup toolchain install stable --profile minimal -c clippy,rustfmt -t aarch64-linux-android
+          rustup default stable
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -32,10 +34,42 @@ jobs:
             target
           key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
           restore-keys: cargo-${{ runner.os }}-
-      - run: cargo fmt --check
-      - run: cargo clippy --all-targets --features iroh --locked -- -D warnings
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets --features iroh --locked -- -D warnings
       - run: cargo clippy --all-targets --locked -- -D warnings
-      - run: cargo test --features iroh --locked
+      - run: cargo clippy -p device-pairing-ffi --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --features iroh --locked
+      - run: cargo test -p device-pairing-ffi --locked
+      - name: FFI type-checks for Android (aarch64)
+        # blake3's build script compiles its NEON C code, so `check` needs the NDK clang
+        # (preinstalled on ubuntu-latest as $ANDROID_NDK_LATEST_HOME); no linker is used.
+        run: |
+          bin="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          export CC_aarch64_linux_android="$bin/aarch64-linux-android24-clang"
+          export AR_aarch64_linux_android="$bin/llvm-ar"
+          cargo check -p device-pairing-ffi --target aarch64-linux-android --locked
+  kotlin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Toolchain
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+            ffi/kotlin/.cache
+          key: kotlin-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'ffi/kotlin/run-tests.sh') }}
+          restore-keys: kotlin-${{ runner.os }}-
+      - name: Generate Kotlin bindings, compile with kotlinc, run on the JVM
+        run: bash ffi/kotlin/run-tests.sh
   ts:
     uses: dragos-catalin/workflows/.github/workflows/node-ci.yml@v1
     with:

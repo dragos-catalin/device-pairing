@@ -1,0 +1,34 @@
+[package]
+name = "device-pairing-ffi"
+version = "0.2.0"
+description = "UniFFI bindings (Kotlin) for the device-pairing crate."
+edition = "2024"
+rust-version = "1.91"
+license = "MIT"
+repository = "https://github.com/dragos-catalin/device-pairing"
+publish = false
+
+[lib]
+name = "device_pairing_ffi"
+crate-type = ["cdylib", "lib"]
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "uniffi-bindgen.rs"
+
+[dependencies]
+device-pairing = { path = ".." }
+serde_json = "1.0.151"
+thiserror = "2.0.21"
+uniffi = { version = "0.32.2", features = ["cli"] }
+
+[lints.rust]
+# No `unsafe_code` lint here: the UniFFI scaffolding is generated `extern "C"` glue.
+missing_docs = "warn"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+# UniFFI passes arguments by value; borrowing is not an option at the boundary.
+needless_pass_by_value = "allow"

@@ -1,6 +1,6 @@
 {
   "name": "@codai/device-pairing",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Human-facing half of device-pairing: short codes and SAS, byte-compatible with the Rust crate.",
   "license": "MIT",
   "type": "module",

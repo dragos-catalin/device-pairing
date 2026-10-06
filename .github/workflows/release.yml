@@ -7,6 +7,9 @@ name: Release
 #              repo dragos-catalin/device-pairing, workflow release.yml.
 #   npmjs.com: package @codai/device-pairing -> Settings -> Trusted publishing ->
 #              GitHub Actions, repo dragos-catalin/device-pairing, workflow release.yml.
+#
+# The workspace also holds ffi/ (device-pairing-ffi, publish = false): only the core crate
+# is published here. Shipping the Kotlin bindings as an AAR / Maven artifact is a follow-up.
 
 on:
   push:
@@ -24,11 +27,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: rustup toolchain install stable --profile minimal && rustup default stable
       - name: Tag matches Cargo.toml
-        run: test "v$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')" = "${GITHUB_REF_NAME}"
-      - run: cargo test --features iroh --locked
+        run: test "v$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "device-pairing") | .version')" = "${GITHUB_REF_NAME}"
+      - run: cargo test -p device-pairing --features iroh --locked
       - uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
         id: auth
-      - run: cargo publish --locked
+      - run: cargo publish -p device-pairing --locked
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
 

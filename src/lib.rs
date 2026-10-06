@@ -15,8 +15,13 @@
 //!   silently inserted key is refused at load.
 //! - `net` (feature `iroh`): the exchange over an iroh QUIC connection, where
 //!   iroh's TLS proves each side holds the key for its endpoint id.
+//! - [`Domain`]: every domain-separation string in one place, so an app that
+//!   ran its own scheme before can adopt the crate without breaking the codes,
+//!   SAS digits and sealed trust stores it already has. Functions without an
+//!   `_in` suffix use [`Domain::DEFAULT`].
 
 mod code;
+mod domain;
 mod error;
 mod exchange;
 mod trust;
@@ -26,11 +31,13 @@ mod window;
 pub mod net;
 
 pub use code::{
-    CODE_ALPHABET, CODE_LEN, SAS_DIGITS, normalise_code, sas_digits, short_code_from_token,
+    CODE_ALPHABET, CODE_LEN, SAS_DIGITS, normalise_code, sas_digits, sas_digits_in,
+    short_code_from_token, short_code_from_token_in,
 };
+pub use domain::Domain;
 pub use error::PairError;
-pub use exchange::{CodeExchange, Confirmed, PAKE_MSG_LEN};
-pub use trust::{TrustError, TrustStore, TrustedPeer};
+pub use exchange::{CONFIRM_LEN, CodeExchange, Confirmed, PAKE_MSG_LEN};
+pub use trust::{PeerRecord, TrustError, TrustStore, TrustedPeer};
 pub use window::{PAIRING_TTL, PairingWindow};
 
 /// Milliseconds since the Unix epoch, for trust-store timestamps.

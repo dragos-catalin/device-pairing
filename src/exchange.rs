@@ -1,17 +1,13 @@
 use spake2::{Ed25519Group, Identity, Password, Spake2};
 use zeroize::Zeroizing;
 
-use crate::PairError;
 use crate::code::normalise_code;
+use crate::{Domain, PairError};
 
 /// Length of the SPAKE2 message each side sends (1-byte side tag + point).
 pub const PAKE_MSG_LEN: usize = 33;
 /// Length of the key-confirmation tag each side sends.
 pub const CONFIRM_LEN: usize = 32;
-
-const IDENTITY_CONTEXT: &[u8] = b"device-pairing-v1";
-const CONFIRM_CONTEXT: &str = "device-pairing 2026 confirm v1";
-const SESSION_CONTEXT: &str = "device-pairing 2026 session v1";
 
 /// SPAKE2 over the short code, bound to both devices' identity keys.
 ///
@@ -28,6 +24,7 @@ pub struct CodeExchange {
     msg: Vec<u8>,
     local: [u8; 32],
     remote: [u8; 32],
+    domain: Domain,
 }
 
 impl std::fmt::Debug for CodeExchange {
@@ -41,12 +38,23 @@ fn sorted<'a>(a: &'a [u8; 32], b: &'a [u8; 32]) -> (&'a [u8; 32], &'a [u8; 32]) 
 }
 
 impl CodeExchange {
-    /// Start the exchange with the code (as shown or as typed; it is normalised).
+    /// Start the exchange with the code (as shown or as typed; it is
+    /// normalised), under [`Domain::DEFAULT`].
     pub fn start(code: &str, local_id: &[u8; 32], remote_id: &[u8; 32]) -> Self {
+        Self::start_in(&Domain::DEFAULT, code, local_id, remote_id)
+    }
+
+    /// [`CodeExchange::start`] under `domain`. Both sides must use the same domain.
+    pub fn start_in(
+        domain: &Domain,
+        code: &str,
+        local_id: &[u8; 32],
+        remote_id: &[u8; 32],
+    ) -> Self {
         let pw = Zeroizing::new(normalise_code(code));
         let (lo, hi) = sorted(local_id, remote_id);
-        let mut ident = Vec::with_capacity(IDENTITY_CONTEXT.len() + 64);
-        ident.extend_from_slice(IDENTITY_CONTEXT);
+        let mut ident = Vec::with_capacity(domain.pake_identity.len() + 64);
+        ident.extend_from_slice(domain.pake_identity);
         ident.extend_from_slice(lo);
         ident.extend_from_slice(hi);
         let (state, msg) = Spake2::<Ed25519Group>::start_symmetric(
@@ -58,6 +66,7 @@ impl CodeExchange {
             msg,
             local: *local_id,
             remote: *remote_id,
+            domain: *domain,
         }
     }
 
@@ -85,8 +94,8 @@ impl CodeExchange {
                 .finish(peer_msg)
                 .map_err(|e| PairError::Protocol(format!("{e:?}")))?,
         );
-        let confirm_key = Zeroizing::new(blake3::derive_key(CONFIRM_CONTEXT, &key));
-        let session_key = Zeroizing::new(blake3::derive_key(SESSION_CONTEXT, &key));
+        let confirm_key = Zeroizing::new(blake3::derive_key(self.domain.confirm_context, &key));
+        let session_key = Zeroizing::new(blake3::derive_key(self.domain.session_context, &key));
         Ok(Confirmed {
             confirm_key,
             session_key,
@@ -209,5 +218,35 @@ mod tests {
     fn malformed_message_is_a_protocol_error() {
         let x = CodeExchange::start("ABCDEFGH", &[1; 32], &[2; 32]);
         assert!(matches!(x.finish(&[0; 5]), Err(PairError::Protocol(_))));
+    }
+
+    #[test]
+    fn domains_must_match_and_change_the_key() {
+        const OTHER: Domain = Domain {
+            pake_identity: b"other-app-v1",
+            confirm_context: "other confirm",
+            session_context: "other session",
+            ..Domain::DEFAULT
+        };
+        let (a, b) = ([1u8; 32], [2u8; 32]);
+        let pair = |da: &Domain, db: &Domain| {
+            let xa = CodeExchange::start_in(da, "ABCDEFGH", &a, &b);
+            let xb = CodeExchange::start_in(db, "ABCDEFGH", &b, &a);
+            let (ma, mb) = (xa.message().to_vec(), xb.message().to_vec());
+            let ca = xa.finish(&mb).unwrap();
+            let cb = xb.finish(&ma).unwrap();
+            let (ta, tb) = (ca.tag(), cb.tag());
+            (
+                ca.verify_peer(&tb).map(|k| *k),
+                cb.verify_peer(&ta).map(|k| *k),
+            )
+        };
+        let (k1, k2) = pair(&OTHER, &OTHER);
+        assert_eq!(k1.clone().unwrap(), k2.unwrap());
+        let (d1, _) = pair(&Domain::DEFAULT, &Domain::DEFAULT);
+        assert_ne!(k1.unwrap(), d1.unwrap());
+        let (m1, m2) = pair(&OTHER, &Domain::DEFAULT);
+        assert_eq!(m1, Err(PairError::Mismatch));
+        assert_eq!(m2, Err(PairError::Mismatch));
     }
 }

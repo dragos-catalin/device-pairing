@@ -1,6 +1,9 @@
+[workspace]
+members = [".", "ffi"]
+
 [package]
 name = "device-pairing"
-version = "0.1.0"
+version = "0.2.0"
 description = "Pair two devices with a short code: one-shot windows, SPAKE2 bound to device identities, SAS, a MAC'd trust store, and an optional iroh transport."
 edition = "2024"
 rust-version = "1.91"
@@ -8,7 +11,7 @@ license = "MIT"
 repository = "https://github.com/dragos-catalin/device-pairing"
 keywords = ["pairing", "spake2", "pake", "iroh", "sas"]
 categories = ["cryptography", "network-programming"]
-exclude = ["ts/", ".github/", ".copilot-tmp/"]
+exclude = ["ts/", "ffi/", ".github/", ".copilot-tmp/"]
 
 [features]
 default = []

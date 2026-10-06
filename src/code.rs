@@ -1,3 +1,5 @@
+use crate::Domain;
+
 /// Characters in the typable code. No `I`, `L`, `O`, `U`, `0` or `1`: it is
 /// read off one screen and typed into another by a human who confuses them.
 pub const CODE_ALPHABET: &[u8] = b"23456789ABCDEFGHJKMNPQRSTVWXYZ";
@@ -8,12 +10,14 @@ pub const CODE_LEN: usize = 8;
 /// Digits in a short authentication string.
 pub const SAS_DIGITS: usize = 6;
 
-const CODE_CONTEXT: &str = "device-pairing 2026 code v1";
-const SAS_DOMAIN: &[u8] = b"device-pairing-sas-v1";
-
-/// The human code derived from a window's random token.
+/// The human code derived from a window's random token ([`Domain::DEFAULT`]).
 pub fn short_code_from_token(token: &[u8; 16]) -> String {
-    let key = blake3::derive_key(CODE_CONTEXT, token);
+    short_code_from_token_in(&Domain::DEFAULT, token)
+}
+
+/// The human code derived from a window's random token under `domain`.
+pub fn short_code_from_token_in(domain: &Domain, token: &[u8; 16]) -> String {
+    let key = blake3::derive_key(domain.code_context, token);
     blake3::hash(&key)
         .as_bytes()
         .iter()
@@ -33,15 +37,26 @@ pub fn normalise_code(input: &str) -> String {
 }
 
 /// `SAS_DIGITS` decimal digits over a pairing transcript. The two ids are
-/// sorted first, so both sides compute the same value whoever dialled.
+/// sorted first, so both sides compute the same value whoever dialled
+/// ([`Domain::DEFAULT`]).
 pub fn sas_digits(nonce: &[u8; 16], id_a: &[u8; 32], id_b: &[u8; 32]) -> String {
+    sas_digits_in(&Domain::DEFAULT, nonce, id_a, id_b)
+}
+
+/// [`sas_digits`] under `domain`.
+pub fn sas_digits_in(
+    domain: &Domain,
+    nonce: &[u8; 16],
+    id_a: &[u8; 32],
+    id_b: &[u8; 32],
+) -> String {
     let (lo, hi) = if id_a <= id_b {
         (id_a, id_b)
     } else {
         (id_b, id_a)
     };
     let mut h = blake3::Hasher::new();
-    h.update(SAS_DOMAIN);
+    h.update(domain.sas_domain);
     h.update(nonce);
     h.update(lo);
     h.update(hi);
@@ -75,5 +90,48 @@ mod tests {
         assert!(c.bytes().all(|b| CODE_ALPHABET.contains(&b)));
         assert_eq!(normalise_code(&c.to_lowercase()), c);
         assert_eq!(normalise_code("ab-cd ef"), "ABCDEF");
+    }
+
+    #[test]
+    fn domain_changes_code_and_sas() {
+        const OTHER: Domain = Domain {
+            code_context: "other-app code v1",
+            sas_domain: b"other-app-sas-v1",
+            ..Domain::DEFAULT
+        };
+        let (t, n, a, b) = ([7u8; 16], [3u8; 16], [1u8; 32], [2u8; 32]);
+        assert_eq!(
+            short_code_from_token_in(&Domain::DEFAULT, &t),
+            short_code_from_token(&t)
+        );
+        assert_ne!(
+            short_code_from_token_in(&OTHER, &t),
+            short_code_from_token(&t)
+        );
+        assert_eq!(
+            sas_digits_in(&Domain::DEFAULT, &n, &a, &b),
+            sas_digits(&n, &a, &b)
+        );
+        assert_ne!(sas_digits_in(&OTHER, &n, &a, &b), sas_digits(&n, &a, &b));
+    }
+
+    /// dashy's pre-crate derivation, copied from its source: only the context differs.
+    #[test]
+    fn dashy_domain_reproduces_dashy_codes() {
+        const DASHY: Domain = Domain {
+            code_context: "dashy-pairing-code-v1",
+            sas_domain: b"dashy-sas-v1",
+            trust_mac_context: "dashy trust-store v1",
+            ..Domain::DEFAULT
+        };
+        let token = [42u8; 16];
+        let key = blake3::derive_key("dashy-pairing-code-v1", &token);
+        let dashy: String = blake3::hash(&key)
+            .as_bytes()
+            .iter()
+            .take(CODE_LEN)
+            .map(|b| CODE_ALPHABET[*b as usize % CODE_ALPHABET.len()] as char)
+            .collect();
+        assert_eq!(short_code_from_token_in(&DASHY, &token), dashy);
     }
 }
